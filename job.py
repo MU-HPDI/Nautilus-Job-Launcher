@@ -16,6 +16,8 @@ class Job:
         job_name: str,
         image: str,
         command: Union[str, List[str]],
+        workingDir: Union[None, str] = None,
+        env: Union[None, Dict[str, str]] = None,
         volumes: Union[None, Dict[str, str]] = None,
         min_cpu: int = MINCPU,
         max_cpu: int = MAXCPU,
@@ -24,20 +26,32 @@ class Job:
         gpu: int = MINGPU,
         shm: bool = False,
     ):
+        #########
+        # Param Check
+        #########
         # fmt: off
         assert job_name is not None and isinstance(job_name, str), "Job name must be a string"
         assert image is not None and isinstance(image, str), "Image must be a string"
         assert command is not None and isinstance(command, (str, list)), "Command must be str or list"
+        assert workingDir is None or isinstance(workingDir, str), "Working dir must be None or string"
+        assert env is None or isinstance(env, dict), "Env must be dict or None"
         assert volumes is None or isinstance(volumes, dict), "Volumes must be dict or None"
         assert all(isinstance(resource, int) for resource in \
                    [min_cpu, max_cpu, min_ram, max_ram, gpu]), "All resources must be int"
         assert isinstance(shm, bool), "Shm must be boolean"
         # fmt: on
 
+        #########
+        # Save to Class
+        #########
         self.job_name = job_name
         self.image = image
         self.command = command
+        self.workingDir = workingDir
 
+        #########
+        # Resources
+        #########
         self.resources = client.V1ResourceRequirements(
             requests={"cpu": min_cpu, "memory": f"{min_ram}Gi", "nvidia.com/gpu": gpu},
             limits={
@@ -47,6 +61,9 @@ class Job:
             },
         )
 
+        #########
+        # Volumes
+        #########
         self.volumes = None
         self.volume_mounts = None
         if volumes is not None:
@@ -64,6 +81,9 @@ class Job:
                 for v in volumes.keys()
             ]
 
+        #########
+        # Shared Memory
+        #########
         if shm is True:
             if self.volumes is None:
                 self.volumes = []
@@ -78,12 +98,23 @@ class Job:
             self.volume_mounts.append(shm_mount)
             self.volumes.append(shm_volume)
 
+        ##########
+        # Environment
+        ##########
+        self.env = None
+        if env is not None and len(env) > 0:
+            self.env = [
+                client.V1EnvVar(name=name, value=value) for name, value in env.items()
+            ]
+
     def create_job_object(self):
         # create container object
         container = client.V1Container(
             name=f"{self.job_name}-container",
             image=self.image,
             command=self.command,
+            working_dir=self.workingDir,
+            env=self.env,
             resources=self.resources,
             volume_mounts=self.volume_mounts,
         )
