@@ -22,6 +22,7 @@ class Job:
         min_ram: int = MINRAM,
         max_ram: int = MAXRAM,
         gpu: int = MINGPU,
+        shm: bool = False,
     ):
         # fmt: off
         assert job_name is not None and isinstance(job_name, str), "Job name must be a string"
@@ -30,6 +31,7 @@ class Job:
         assert volumes is None or isinstance(volumes, dict), "Volumes must be dict or None"
         assert all(isinstance(resource, int) for resource in \
                    [min_cpu, max_cpu, min_ram, max_ram, gpu]), "All resources must be int"
+        assert isinstance(shm, bool), "Shm must be boolean"
         # fmt: on
 
         self.job_name = job_name
@@ -61,6 +63,20 @@ class Job:
                 )
                 for v in volumes.keys()
             ]
+
+        if shm is True:
+            if self.volumes is None:
+                self.volumes = []
+            if self.volume_mounts is None:
+                self.volume_mounts = []
+
+            shm_mount = client.V1VolumeMount(mount_path="/dev/shm", name="dshm")
+            shm_volume = client.V1Volume(
+                name="dshm", empty_dir=client.V1EmptyDirVolumeSource(medium="Memory")
+            )
+
+            self.volume_mounts.append(shm_mount)
+            self.volumes.append(shm_volume)
 
     def create_job_object(self):
         # create container object
