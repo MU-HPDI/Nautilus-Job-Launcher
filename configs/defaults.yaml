@@ -1,0 +1,17 @@
+namespace: gpn-mizzou-jhurt
+
+defaults:
+  volumes: 
+    jhurt-data: /data
+  env:
+    CUDA_HOME: /usr/local/cuda
+  min_cpu: 2
+  min_ram: 4
+
+jobs:
+- job_name: python-print
+  image: python:3.8
+  command: ["python", "-c", "print('hello world')"]
+- job_name: echo-print
+  image: ubuntu:20.04
+  command: ["echo", "'hello world"]

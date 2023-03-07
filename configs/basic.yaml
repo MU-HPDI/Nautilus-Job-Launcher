@@ -1,0 +1,9 @@
+namespace: gpn-mizzou-jhurt
+
+jobs:
+- job_name: python-print
+  image: python:3.8
+  command: ["python", "-c", "print('hello world')"]
+- job_name: echo-print
+  image: ubuntu:20.04
+  command: ["echo", "'hello world"]
