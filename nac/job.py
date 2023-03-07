@@ -1,4 +1,17 @@
-from kubernetes import client
+from kubernetes.client import (
+    V1ResourceRequirements,
+    V1EnvVar,
+    V1Volume,
+    V1VolumeMount,
+    V1PersistentVolumeClaimVolumeSource,
+    V1PodTemplateSpec,
+    V1ObjectMeta,
+    V1PodSpec,
+    V1JobSpec,
+    V1Job,
+    V1EmptyDirVolumeSource,
+    V1Container,
+)
 from typing import Union, List, Dict
 
 MINCPU = 2
@@ -52,7 +65,7 @@ class Job:
         #########
         # Resources
         #########
-        self.resources = client.V1ResourceRequirements(
+        self.resources = V1ResourceRequirements(
             requests={"cpu": min_cpu, "memory": f"{min_ram}Gi", "nvidia.com/gpu": gpu},
             limits={
                 "cpu": max(min_cpu, max_cpu),
@@ -68,13 +81,13 @@ class Job:
         self.volume_mounts = None
         if volumes is not None:
             self.volume_mounts = [
-                client.V1VolumeMount(mount_path=path, name=name)
+                V1VolumeMount(mount_path=path, name=name)
                 for name, path in volumes.items()
             ]
             self.volumes = [
-                client.V1Volume(
+                V1Volume(
                     name=v,
-                    persistent_volume_claim=client.V1PersistentVolumeClaimVolumeSource(
+                    persistent_volume_claim=V1PersistentVolumeClaimVolumeSource(
                         claim_name=v
                     ),
                 )
@@ -90,9 +103,9 @@ class Job:
             if self.volume_mounts is None:
                 self.volume_mounts = []
 
-            shm_mount = client.V1VolumeMount(mount_path="/dev/shm", name="dshm")
-            shm_volume = client.V1Volume(
-                name="dshm", empty_dir=client.V1EmptyDirVolumeSource(medium="Memory")
+            shm_mount = V1VolumeMount(mount_path="/dev/shm", name="dshm")
+            shm_volume = V1Volume(
+                name="dshm", empty_dir=V1EmptyDirVolumeSource(medium="Memory")
             )
 
             self.volume_mounts.append(shm_mount)
@@ -103,13 +116,11 @@ class Job:
         ##########
         self.env = None
         if env is not None and len(env) > 0:
-            self.env = [
-                client.V1EnvVar(name=name, value=value) for name, value in env.items()
-            ]
+            self.env = [V1EnvVar(name=name, value=value) for name, value in env.items()]
 
     def create_job_object(self):
         # create container object
-        container = client.V1Container(
+        container = V1Container(
             name=f"{self.job_name}-container",
             image=self.image,
             command=self.command,
@@ -120,21 +131,21 @@ class Job:
         )
 
         # Create and configure a spec section
-        template = client.V1PodTemplateSpec(
-            metadata=client.V1ObjectMeta(labels={"app": self.job_name}),
-            spec=client.V1PodSpec(
+        template = V1PodTemplateSpec(
+            metadata=V1ObjectMeta(labels={"app": self.job_name}),
+            spec=V1PodSpec(
                 restart_policy="Never", containers=[container], volumes=self.volumes
             ),
         )
         # Create the specification of deployment
-        spec = client.V1JobSpec(
+        spec = V1JobSpec(
             template=template, backoff_limit=0, ttl_seconds_after_finished=60
         )
         # Instantiate the job object
-        job = client.V1Job(
+        job = V1Job(
             api_version="batch/v1",
             kind="Job",
-            metadata=client.V1ObjectMeta(name=self.job_name),
+            metadata=V1ObjectMeta(name=self.job_name),
             spec=spec,
         )
 

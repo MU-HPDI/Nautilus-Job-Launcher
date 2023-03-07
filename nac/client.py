@@ -1,7 +1,7 @@
 from kubernetes import config, client
 from pprint import pprint
 
-from job import Job
+from .job import Job
 
 
 class NautilusAutomationClient:
