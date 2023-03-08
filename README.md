@@ -3,7 +3,12 @@
 This Nautilus Job Launcher is a Python library that enables automation of launching jobs on the NRP Nautlius HyperCluster. 
 
 ## Installation
-To install the Nautilus Job Launcher, clone the repository and use `pip` to install it:
+To install the Nautilus Job Launcher, you can use the latest `.whl` pushed to GitLab's PyPI repository:
+```
+pip3 install --extra-index-url https://gitlab.nrp-nautilus.io/api/v4/projects/2953/packages/pypi/simple nautiluslauncher
+```
+
+Alternatively, you can clone this repository and use `pip` to install it:
 ```
 pip3 install nautilus-job-launcher
 ```
