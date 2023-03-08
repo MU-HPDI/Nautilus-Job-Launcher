@@ -1,5 +1,5 @@
 from kubernetes import config, client
-from pprint import pprint
+from .utils import LOGGER
 
 from .job import Job
 
@@ -13,6 +13,9 @@ class NautilusAutomationClient:
         self.namespace = namespace
 
     def create_job(self, job: Job):
+        LOGGER.debug(
+            f"Creating job in namespace {self.namespace} with batchV1 API: {job.job_name}"
+        )
         return self.batchV1.create_namespaced_job(body=job(), namespace=self.namespace)
 
     def list_pods(self):

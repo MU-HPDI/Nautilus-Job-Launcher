@@ -1,11 +1,13 @@
 import warnings
+import logging
 from urllib3.connectionpool import InsecureRequestWarning
 from .client import NautilusAutomationClient
 from .job import Job
 import yaml
 from copy import deepcopy
 import collections.abc
-from pprint import pprint
+from pprint import pprint, pformat
+from .utils import LOGGER
 
 
 def update(d, u):
@@ -43,15 +45,26 @@ class NautilusJobLauncher:
     def run(self, dryrun=False):
         specs = []
         for jobSpec in self.jobs:
+            ####
+            # Get updated spec
+            ####
             jobSpec = update(deepcopy(self.defaults), jobSpec)
             specs.append(jobSpec)
+            LOGGER.debug(jobSpec)
+
+            ####
+            # Create job
+            #####
             job = Job(**jobSpec)
+
             if not dryrun:
                 try:
                     self.nac.create_job(job)
-                    print(f"Successfully created job: {job.job_name}")
-                except Exception:
-                    print(f"Failed to create job: {job.job_name}")
+                    LOGGER.info(f"Successfully created job: {job.job_name}")
+                except Exception as e:
+                    LOGGER.exception(
+                        f"Failed to create job: {job.job_name}", exc_info=e
+                    )
 
         if dryrun:
-            pprint(specs)
+            LOGGER.info("\n" + pformat(specs))

@@ -1,7 +1,7 @@
 namespace: gpn-mizzou-jhurt
 
 defaults:
-  image: gitlab-registry.nrp-nautilus.io/jhurt/mmdetection:latest
+  image: gitlab-registry.nrp-nautilus.io/jhurt/mmdetection:208c1d5b
   volumes:
     jhurt-data: /data
     jhurt-experiments: /output
@@ -21,21 +21,15 @@ defaults:
   max_cpu: 16
   gpu: 4
   shm: True
-  gpu_types:
-    - NVIDIA-RTX-A5000
-    - NVIDIA-RTX-A6000
 
 jobs:
   - 
-    job_name: train-vit
-    workingDir: /output/XView/experiments/vit
+    job_name: train-ssd-rareplanes
+    workingDir: /output/RarePlanes/ssd
     env:
-      MMDET_WORK_DIR: /output/XView/experiments/vit/train_output
-    gpu_types:
-      - NVIDIA-RTX-3090
+      MMDET_WORK_DIR: /output/RarePlanes/ssd/train_output_2_TEST
   - 
-    job_name: train-swin
-    workingDir: /output/XView/experiments/swin
+    job_name: train-ssd-dota
+    workingDir: /output/DOTA/ssd
     env:
-      MMDET_WORK_DIR: /output/XView/experiments/swin/train_output
-  
+      MMDET_WORK_DIR: /output/DOTA/ssd/train_output_2_TEST

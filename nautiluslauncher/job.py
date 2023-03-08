@@ -18,6 +18,7 @@ from kubernetes.client import (
     V1NodeSelectorTerm,
     V1NodeSelectorRequirement,
 )
+from .utils import LOGGER
 
 from typing import Union, List, Dict
 
@@ -78,6 +79,7 @@ class Job:
         ########
         self.ports = None
         if ports is not None and len(ports) > 0:
+            LOGGER.debug("Found ports in cfg: {ports}")
             self.ports = [V1ContainerPort(container_port=p) for p in ports]
 
         #########
@@ -94,6 +96,9 @@ class Job:
 
         self.affinity = None
         if gpu > 0 and gpu_types is not None and len(gpu_types) > 0:
+            LOGGER.debug(
+                f"Found gpu_types and GPU > 0. Setting node affinity: {gpu_types}"
+            )
             self.affinity = V1Affinity(
                 node_affinity=V1NodeAffinity(
                     required_during_scheduling_ignored_during_execution=V1NodeSelector(
@@ -118,6 +123,9 @@ class Job:
         self.volumes = None
         self.volume_mounts = None
         if volumes is not None:
+            LOGGER.debug(
+                f"Found volumes for this job. Mounting PVCs: {list(volumes.keys())}"
+            )
             self.volume_mounts = [
                 V1VolumeMount(mount_path=path, name=name)
                 for name, path in volumes.items()
@@ -136,6 +144,7 @@ class Job:
         # Shared Memory
         #########
         if shm is True:
+            LOGGER.debug("Found shm = True. Adding dshm volume for PyTorch")
             if self.volumes is None:
                 self.volumes = []
             if self.volume_mounts is None:
@@ -154,7 +163,12 @@ class Job:
         ##########
         self.env = None
         if env is not None and len(env) > 0:
-            self.env = [V1EnvVar(name=name, value=value) for name, value in env.items()]
+            LOGGER.debug(
+                f"Found environment variables. Adding to container: {list(env.keys())}"
+            )
+            self.env = [
+                V1EnvVar(name=name, value=str(value)) for name, value in env.items()
+            ]
 
     def create_job_object(self):
         # create container object
