@@ -31,44 +31,6 @@ You can choose to perform a dryrun by passing a `--dryrun` flag:
 python3 -m nautiluslauncher -c cfg.py --dryrun
 ```
 
-### Library Usage
-If you would like to integrate launching jobs with your application/library, you can choose to import them into your scripts instead:
-```python
-from nautiluslauncher import Job, NautilusAutomationClient
-
-client = NautilusAutomationClient("mynamespace")
-images = ["python:3.6", "python:3.7", "python:3.8"]
-for i, img in enumerate(images):
-    j = Job(job_name=f"test_python_{i}", image=i, command=["python", "-c", "print('hello world')"])
-    client.create_job(j)
-```
-
-If you'd rather utilize a dictionary to configure your jobs and integrate that into your application:
-```python
-from nautiluslauncher import NautilusJobLauncher
-
-my_jobs = {
-    "namespace": "mynamespace",
-    "jobs": [
-        {"image": "python:3.6", command: ["python", "-c", "print('hello world')"], "job_name": "myjob1"}
-        {"image": "python:3.7", command: ["python", "-c", "print('hello world')"], "job_name": "myjob2"}
-        {"image": "python:3.8", command: ["python", "-c", "print('hello world')"], "job_name": "myjob3"}
-    ]
-}
-
-launcher = NautilusJobLauncher(my_jobs)
-launcher.run()
-```
-
-Or from a YAML file:
-```python
-from nautiluslauncher import NautilusJobLauncher
-
-my_file = "myCfg.yaml"
-
-launcher = NautilusJobLauncher.from_config(my_file)
-launcher.run()
-```
 
 ## Configuration
 Configuration is done via a YAML file. There are sample YAML configs in the `configs` directory of this repository.
@@ -116,4 +78,43 @@ jobs:
 -
     container: python:3.7
     workingDir: /mydir2
+```
+
+### Library Usage
+If you would like to integrate launching jobs with your application/library, you can choose to import them into your scripts instead:
+```python
+from nautiluslauncher import Job, NautilusAutomationClient
+
+client = NautilusAutomationClient("mynamespace")
+images = ["python:3.6", "python:3.7", "python:3.8"]
+for i, img in enumerate(images):
+    j = Job(job_name=f"test_python_{i}", image=i, command=["python", "-c", "print('hello world')"])
+    client.create_job(j)
+```
+
+If you'd rather utilize a dictionary to configure your jobs and integrate that into your application:
+```python
+from nautiluslauncher import NautilusJobLauncher
+
+my_jobs = {
+    "namespace": "mynamespace",
+    "jobs": [
+        {"image": "python:3.6", command: ["python", "-c", "print('hello world')"], "job_name": "myjob1"}
+        {"image": "python:3.7", command: ["python", "-c", "print('hello world')"], "job_name": "myjob2"}
+        {"image": "python:3.8", command: ["python", "-c", "print('hello world')"], "job_name": "myjob3"}
+    ]
+}
+
+launcher = NautilusJobLauncher(my_jobs)
+launcher.run()
+```
+
+Or from a YAML file:
+```python
+from nautiluslauncher import NautilusJobLauncher
+
+my_file = "myCfg.yaml"
+
+launcher = NautilusJobLauncher.from_config(my_file)
+launcher.run()
 ```

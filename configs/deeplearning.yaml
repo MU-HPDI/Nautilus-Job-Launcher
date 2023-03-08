@@ -1,12 +1,48 @@
+##################
+#
+# Deep Learning Example
+#
+###################
+
+# set the namespace on the nautilus cluster
 namespace: gpn-mizzou-jhurt
 
+##########
+# Defaults
+##########
 defaults:
+
+  ##########
+  # Image + Command
+  #    All jobs will use this image 
+  #    and start with this command
+  ##########
   image: gitlab-registry.nrp-nautilus.io/jhurt/mmdetection:208c1d5b
+  command: ["python", "-m", "cgimmd", "train", "./train_cfg.py"]
+
+  ##########
+  # VOLUMES 
+  #    All jobs will have 
+  #    these volumes mounted
+  #    Format is PVCName: /mountPath
+  ##########
   volumes:
     jhurt-data: /data
     jhurt-experiments: /output
+
+  ##########
+  # Ports
+  #    All jobs will have 
+  #    these ports open
+  ##########
   ports:
     - 8880
+
+  ##########
+  # Environment 
+  #    All jobs will have 
+  #    these env variables
+  ##########
   env:
     MMDET_GPU_IDS: all
     MMDET_BATCH_SIZE: 2
@@ -14,7 +50,12 @@ defaults:
     NCCL_DEBUG: INFO
     CUDA_HOME: /usr/local/cuda
     MKL_THREADING_LAYER: GNU
-  command: ["python", "-m", "cgimmd", "train", "./train_cfg.py"]
+
+  ##########
+  # Resources
+  #    All jobs will have 
+  #    these resources
+  ##########
   min_ram: 8
   max_ram: 64
   min_cpu: 8
@@ -22,14 +63,25 @@ defaults:
   gpu: 4
   shm: True
 
+
+############
+# Define the jobs
+#
+# We only need to set the values
+# that need to change from the defaults
+# in this case the directory to run in
+############
 jobs:
+
+  #####
+  # Job 1
+  #####
   - 
     job_name: train-ssd-rareplanes
     workingDir: /output/RarePlanes/ssd
-    env:
-      MMDET_WORK_DIR: /output/RarePlanes/ssd/train_output_2_TEST
+  #####
+  # Job 2
+  #####
   - 
     job_name: train-ssd-dota
     workingDir: /output/DOTA/ssd
-    env:
-      MMDET_WORK_DIR: /output/DOTA/ssd/train_output_2_TEST

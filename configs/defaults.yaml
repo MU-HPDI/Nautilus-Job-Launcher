@@ -1,17 +1,56 @@
+##################
+#
+# Defaults Example
+#
+###################
+
+# set the namespace on the nautilus cluster
 namespace: gpn-mizzou-jhurt
 
+##########
+# Defaults
+##########
 defaults:
+
+  ##########
+  # VOLUMES 
+  #    All jobs will have 
+  #    these volumes mounted
+  ##########
   volumes: 
     jhurt-data: /data
+
+
+  ##########
+  # Environment 
+  #    All jobs will have 
+  #    these env variables
+  ##########
   env:
     CUDA_HOME: /usr/local/cuda
+
+  ##########
+  # Resources
+  #    All jobs will have 
+  #    these resources
+  ##########
   min_cpu: 2
   min_ram: 4
 
+############
+# Define the jobs
+############
 jobs:
-- job_name: python-print
-  image: python:3.8
-  command: ["python", "-c", "print('hello world')"]
-- job_name: echo-print
-  image: ubuntu:20.04
-  command: ["echo", "'hello world"]
+
+  #####
+  # Job 1
+  #####
+  - job_name: python-print                            # the name of the job
+    image: python:3.8                                 # the container image
+    command: ["python", "-c", "print('hello world')"] # the command to run
+  #####
+  # Job 2
+  #####
+  - job_name: echo-print                              # the name of the job
+    image: ubuntu:20.04                               # the container image
+    command: ["echo", "'hello world"]                 # the command to run
