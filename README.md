@@ -9,6 +9,13 @@ pip3 install nautilus-job-launcher
 ```
 
 ## Usage
+**Note:** You must have your Kubernetes config file in `~/.kube/config` to use this library!
+
+The Nautilus Launcher can be used as an application at the command line that will kick off jobs from a YAML config file, or it can be utilized as a library integrated into other Python applications. 
+
+Details of these use cases are described below.
+
+### Command Line Usage
 The job launcher is invoked as a library and uses a configuration file (YAML):
 ```bash
 python3 -m nautiluslauncher -c cfg.yaml
@@ -19,6 +26,7 @@ You can choose to perform a dryrun by passing a `--dryrun` flag:
 python3 -m nautiluslauncher -c cfg.py --dryrun
 ```
 
+### Library Usage
 If you would like to integrate launching jobs with your application/library, you can choose to import them into your scripts instead:
 ```python
 from nautiluslauncher import Job, NautilusAutomationClient
