@@ -1,0 +1,37 @@
+namespace: gpn-mizzou-jhurt
+
+defaults:
+  image: gitlab-registry.nrp-nautilus.io/jhurt/mmdetection:latest
+  volumes:
+    jhurt-data: /data
+    jhurt-experiments: /output
+  ports:
+    - 8880
+  env:
+    MMDET_GPU_IDS: all
+    MMDET_BATCH_SIZE: 2
+    NCCL_SOCKET_IFNAME: eth0
+    NCCL_DEBUG: INFO
+    CUDA_HOME: /usr/local/cuda
+    MKL_THREADING_LAYER: GNU
+  command: ["python", "-m", "cgimmd", "train", "./train_cfg.py"]
+  min_ram: 8
+  max_ram: 64
+  min_cpu: 8
+  max_cpu: 16
+  gpu: 4
+  shm: True
+  gpu_types:
+    - NVIDIA-RTX-A5000
+    - NVIDIA-RTX-A6000
+
+jobs:
+  - 
+    workingDir: /output/XView/experiments/vit
+    env:
+      MMDET_WORK_DIR: /output/XView/experiments/vit/train_output
+  - 
+    workingDir: /output/XView/experiments/swin
+    env:
+      MMDET_WORK_DIR: /output/XView/experiments/swin/train_output
+  

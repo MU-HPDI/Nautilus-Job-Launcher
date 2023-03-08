@@ -11,7 +11,14 @@ from kubernetes.client import (
     V1Job,
     V1EmptyDirVolumeSource,
     V1Container,
+    V1ContainerPort,
+    V1Affinity,
+    V1NodeAffinity,
+    V1NodeSelector,
+    V1NodeSelectorTerm,
+    V1NodeSelectorRequirement,
 )
+
 from typing import Union, List, Dict
 
 MINCPU = 2
@@ -32,6 +39,8 @@ class Job:
         workingDir: Union[None, str] = None,
         env: Union[None, Dict[str, str]] = None,
         volumes: Union[None, Dict[str, str]] = None,
+        ports: Union[None, List[int]] = None,
+        gpu_types: Union[None, List[str]] = None,
         min_cpu: int = MINCPU,
         max_cpu: int = MAXCPU,
         min_ram: int = MINRAM,
@@ -47,6 +56,8 @@ class Job:
         assert image is not None and isinstance(image, str), "Image must be a string"
         assert command is not None and isinstance(command, (str, list)), "Command must be str or list"
         assert workingDir is None or isinstance(workingDir, str), "Working dir must be None or string"
+        assert ports is None or isinstance(ports, list), "Ports must be None or list"
+        assert gpu_types is None or isinstance(gpu_types, list), "Gpu Types must be None or list"
         assert env is None or isinstance(env, dict), "Env must be dict or None"
         assert volumes is None or isinstance(volumes, dict), "Volumes must be dict or None"
         assert all(isinstance(resource, int) for resource in \
@@ -62,6 +73,13 @@ class Job:
         self.command = command
         self.workingDir = workingDir
 
+        ########
+        # Ports
+        ########
+        self.ports = None
+        if ports is not None and len(ports) > 0:
+            self.ports = [V1ContainerPort(container_port=p) for p in ports]
+
         #########
         # Resources
         #########
@@ -73,6 +91,26 @@ class Job:
                 "nvidia.com/gpu": gpu,
             },
         )
+
+        self.affinity = None
+        if gpu > 0 and gpu_types is not None and len(gpu_types) > 0:
+            self.affinity = V1Affinity(
+                node_affinity=V1NodeAffinity(
+                    required_during_scheduling_ignored_during_execution=V1NodeSelector(
+                        node_selector_terms=[
+                            V1NodeSelectorTerm(
+                                match_expressions=[
+                                    V1NodeSelectorRequirement(
+                                        key="nvidia.com/gpu.product",
+                                        operator="In",
+                                        values=gpu_types,
+                                    )
+                                ]
+                            )
+                        ]
+                    )
+                )
+            )
 
         #########
         # Volumes
@@ -128,13 +166,17 @@ class Job:
             env=self.env,
             resources=self.resources,
             volume_mounts=self.volume_mounts,
+            ports=self.ports,
         )
 
         # Create and configure a spec section
         template = V1PodTemplateSpec(
             metadata=V1ObjectMeta(labels={"app": self.job_name}),
             spec=V1PodSpec(
-                restart_policy="Never", containers=[container], volumes=self.volumes
+                restart_policy="Never",
+                containers=[container],
+                volumes=self.volumes,
+                affinity=self.affinity,
             ),
         )
         # Create the specification of deployment
