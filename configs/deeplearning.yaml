@@ -27,10 +27,14 @@ defaults:
 
 jobs:
   - 
+    job_name: train-vit
     workingDir: /output/XView/experiments/vit
     env:
       MMDET_WORK_DIR: /output/XView/experiments/vit/train_output
+    gpu_types:
+      - NVIDIA-RTX-3090
   - 
+    job_name: train-swin
     workingDir: /output/XView/experiments/swin
     env:
       MMDET_WORK_DIR: /output/XView/experiments/swin/train_output

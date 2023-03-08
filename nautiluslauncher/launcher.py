@@ -5,6 +5,7 @@ from .job import Job
 import yaml
 from copy import deepcopy
 import collections.abc
+from pprint import pprint
 
 
 def update(d, u):
@@ -39,12 +40,18 @@ class NautilusJobLauncher:
             warnings.simplefilter(action="ignore", category=InsecureRequestWarning)
             self.nac = NautilusAutomationClient(cfg["namespace"])
 
-    def run(self):
+    def run(self, dryrun=False):
+        specs = []
         for jobSpec in self.jobs:
             jobSpec = update(deepcopy(self.defaults), jobSpec)
+            specs.append(jobSpec)
             job = Job(**jobSpec)
-            try:
-                self.nac.create_job(job)
-                print(f"Successfully created job: {job.job_name}")
-            except Exception:
-                print(f"Failed to create job: {job.job_name}")
+            if not dryrun:
+                try:
+                    self.nac.create_job(job)
+                    print(f"Successfully created job: {job.job_name}")
+                except Exception:
+                    print(f"Failed to create job: {job.job_name}")
+
+        if dryrun:
+            pprint(specs)

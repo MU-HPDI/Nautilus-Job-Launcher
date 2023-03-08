@@ -10,8 +10,13 @@ pip3 install nautilus-job-launcher
 
 ## Usage
 The job launcher is invoked as a library and uses a configuration file (YAML):
-```
+```bash
 python3 -m nautiluslauncher -c cfg.yaml
+```
+
+You can choose to perform a dryrun by passing a `--dryrun` flag:
+```bash
+python3 -m nautiluslauncher -c cfg.py --dryrun
 ```
 
 If you would like to integrate launching jobs with your application/library, you can choose to import them into your scripts instead:
