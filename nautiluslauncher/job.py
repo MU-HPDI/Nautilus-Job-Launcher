@@ -181,6 +181,7 @@ class Job:
             resources=self.resources,
             volume_mounts=self.volume_mounts,
             ports=self.ports,
+            image_pull_policy="IfNotPresent",
         )
 
         # Create and configure a spec section
