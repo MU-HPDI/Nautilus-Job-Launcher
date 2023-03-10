@@ -42,8 +42,10 @@ class NautilusJobLauncher:
             warnings.simplefilter(action="ignore", category=InsecureRequestWarning)
             self.nac = NautilusAutomationClient(cfg["namespace"])
 
-    def run(self, dryrun=False):
+    def run(self, dryrun=False, verbose_errors=True):
         specs = []
+        n_failed = 0
+        logStatus = LOGGER.exception if verbose_errors else LOGGER.debug
         for jobSpec in self.jobs:
             ####
             # Get updated spec
@@ -62,9 +64,11 @@ class NautilusJobLauncher:
                     self.nac.create_job(job)
                     LOGGER.info(f"Successfully created job: {job.job_name}")
                 except Exception as e:
-                    LOGGER.exception(
-                        f"Failed to create job: {job.job_name}", exc_info=e
-                    )
+                    n_failed += 1
+                    logStatus(f"Failed to create job: {job.job_name}", exc_info=e)
+
+        if not verbose_errors and not dryrun:
+            LOGGER.info(f"Failed to create {n_failed} jobs")
 
         if dryrun:
             LOGGER.info("\n" + pformat(specs))
