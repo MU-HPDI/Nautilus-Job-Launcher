@@ -42,15 +42,27 @@ class NautilusJobLauncher:
             warnings.simplefilter(action="ignore", category=InsecureRequestWarning)
             self.nac = NautilusAutomationClient(cfg["namespace"])
 
-    def run(self, dryrun=False, verbose_errors=True):
+    def run(self, dryrun=False, jobs=None, verbose_errors=True):
         specs = []
         n_failed = 0
         logStatus = LOGGER.exception if verbose_errors else LOGGER.debug
+
         for jobSpec in self.jobs:
             ####
             # Get updated spec
             ####
             jobSpec = update(deepcopy(self.defaults), jobSpec)
+
+            ####
+            # Check name
+            ####
+            if jobs is not None and jobSpec["job_name"] not in jobs:
+                LOGGER.debug(f"Skipping job {jobSpec['job_name']}; not found in jobs")
+                continue
+
+            ####
+            # add to specs
+            ####
             specs.append(jobSpec)
             LOGGER.debug(jobSpec)
 

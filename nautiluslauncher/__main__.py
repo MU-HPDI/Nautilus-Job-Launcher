@@ -19,8 +19,16 @@ parser.add_argument(
     default=False,
     help="When true, don't print stack trace for failed job launch",
 )
+parser.add_argument(
+    "-j",
+    "--jobs",
+    required=False,
+    default=None,
+    nargs="*",
+    help="Names of jobs in cfg to run. Defaults to all",
+)
 args = parser.parse_args()
 
 NautilusJobLauncher.from_config(args.cfg).run(
-    dryrun=args.dryrun, verbose_errors=not args.ignore
+    dryrun=args.dryrun, verbose_errors=not args.ignore, jobs=args.jobs
 )

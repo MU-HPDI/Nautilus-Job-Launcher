@@ -4,3 +4,4 @@ build/*
 *.egg-info
 nautiluslauncher.log
 dist/*
+.idea
