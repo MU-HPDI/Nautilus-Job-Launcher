@@ -24,10 +24,19 @@ REQUIRED_KEYS = {"namespace", "jobs"}
 
 class NautilusJobLauncher:
     @classmethod
-    def from_config(cls, cfg_path):
+    def from_config(cls, cfg_path, base_cfg_path=None):
+        cfg = None
+        if base_cfg_path is not None:
+            with open(base_cfg_path) as f:
+                cfg = yaml.full_load(f)
         with open(cfg_path) as f:
-            cfg = yaml.full_load(f)
-        return cls(cfg)
+            job_cfg = yaml.full_load(f)
+
+        if cfg is None:
+            return cls(job_cfg)
+        else:
+            cfg["jobs"] = job_cfg["jobs"]
+            return cls(cfg)
 
     def __init__(self, cfg):
         assert isinstance(cfg, dict), "Config must be dictionary"
@@ -79,7 +88,7 @@ class NautilusJobLauncher:
                     n_failed += 1
                     logStatus(f"Failed to create job: {job.job_name}", exc_info=e)
 
-        if not verbose_errors and not dryrun:
+        if not verbose_errors and not dryrun and n_failed > 0:
             LOGGER.info(f"Failed to create {n_failed} jobs")
 
         if dryrun:

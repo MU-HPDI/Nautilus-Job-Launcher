@@ -196,7 +196,7 @@ class Job:
         )
         # Create the specification of deployment
         spec = V1JobSpec(
-            template=template, backoff_limit=0, ttl_seconds_after_finished=86400
+            template=template, backoff_limit=0, ttl_seconds_after_finished=604800
         )
         # Instantiate the job object
         job = V1Job(
