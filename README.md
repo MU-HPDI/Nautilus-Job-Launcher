@@ -49,8 +49,6 @@ python3 -m nautiluslauncher -c cfg.py -j my-job-1
 
 ### Using a Base Config
 
-_**New in Version 1.3**_
-
 You may also choose to place all of your defaults into a base configuration file, and then place your jobs into a separate YAML file.
 
 In this usage configuration, all keys except for the `jobs` key are placed in the base configuration file while all jobs go into their own file under the `jobs` key. This allows for more ease in templating jobs:
@@ -90,6 +88,7 @@ The `namespace` is the namespace on the Nautilus cluster you'd like to use. The 
 | volumes    | The volumes to mount                   | None       | dict[str, str] |
 | ports      | The container ports to expose          | None       | list[int]      |
 | gpu_types  | The types of GPUs required             | None       | list[str]      |
+| region     | The region the job should run in       | None       | str            |
 | min_cpu    | Minimum # of CPU Cores                 | 2          | int            |
 | max_cpu    | Max # of CPU cores                     | 4          | int            |
 | min_ram    | Min GB of RAM                          | 4          | int            |

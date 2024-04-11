@@ -20,7 +20,7 @@ from kubernetes.client import (
 )
 from .utils import LOGGER
 
-from typing import Union, List, Dict
+from typing import Union, List, Dict, Optional
 
 MINCPU = 2
 MAXCPU = 4
@@ -37,11 +37,12 @@ class Job:
         job_name: str,
         image: str,
         command: Union[str, List[str]],
-        workingDir: Union[None, str] = None,
-        env: Union[None, Dict[str, str]] = None,
-        volumes: Union[None, Dict[str, str]] = None,
-        ports: Union[None, List[int]] = None,
-        gpu_types: Union[None, List[str]] = None,
+        workingDir: Optional[str] = None,
+        env: Optional[Dict[str, str]] = None,
+        volumes: Optional[Dict[str, str]] = None,
+        ports: Optional[List[int]] = None,
+        gpu_types: Optional[List[str]] = None,
+        region: Optional[str] = None,
         min_cpu: int = MINCPU,
         max_cpu: int = MAXCPU,
         min_ram: int = MINRAM,
@@ -59,6 +60,7 @@ class Job:
         assert workingDir is None or isinstance(workingDir, str), "Working dir must be None or string"
         assert ports is None or isinstance(ports, list), "Ports must be None or list"
         assert gpu_types is None or isinstance(gpu_types, list), "Gpu Types must be None or list"
+        assert region is None or isinstance(region, str), "Region must be None or string"
         assert env is None or isinstance(env, dict), "Env must be dict or None"
         assert volumes is None or isinstance(volumes, dict), "Volumes must be dict or None"
         assert all(isinstance(resource, int) for resource in \
@@ -94,24 +96,47 @@ class Job:
             },
         )
 
+        ####
+        # Affinity
+        ####
         self.affinity = None
+        affinity_terms = []
+
+        ####
+        # GPU Affinity
+        ####
         if gpu > 0 and gpu_types is not None and len(gpu_types) > 0:
             LOGGER.debug(
                 f"Found gpu_types and GPU > 0. Setting node affinity: {gpu_types}"
             )
+            affinity_terms.append(
+                V1NodeSelectorRequirement(
+                    key="nvidia.com/gpu.product",
+                    operator="In",
+                    values=gpu_types,
+                )
+            )
+        ####
+        # Region Affinity
+        ####
+        if region is not None:
+            affinity_terms.append(
+                V1NodeSelectorRequirement(
+                    key="topology.kubernetes.io/region",
+                    operator="In",
+                    values=[region],
+                )
+            )
+
+        ####
+        # Set affinity if necessary
+        ####
+        if len(affinity_terms) > 0:
             self.affinity = V1Affinity(
                 node_affinity=V1NodeAffinity(
                     required_during_scheduling_ignored_during_execution=V1NodeSelector(
                         node_selector_terms=[
-                            V1NodeSelectorTerm(
-                                match_expressions=[
-                                    V1NodeSelectorRequirement(
-                                        key="nvidia.com/gpu.product",
-                                        operator="In",
-                                        values=gpu_types,
-                                    )
-                                ]
-                            )
+                            V1NodeSelectorTerm(match_expressions=affinity_terms)
                         ]
                     )
                 )
