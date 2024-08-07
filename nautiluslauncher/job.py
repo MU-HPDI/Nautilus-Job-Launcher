@@ -1,3 +1,5 @@
+from typing import Union, List, Dict, Optional
+
 from kubernetes.client import (
     V1ResourceRequirements,
     V1EnvVar,
@@ -17,10 +19,10 @@ from kubernetes.client import (
     V1NodeSelector,
     V1NodeSelectorTerm,
     V1NodeSelectorRequirement,
+    V1Toleration
 )
-from .utils import LOGGER
 
-from typing import Union, List, Dict, Optional
+from .utils import LOGGER
 
 MINCPU = 2
 MAXCPU = 4
@@ -30,25 +32,42 @@ MAXRAM = 8
 
 MINGPU = 0
 
+GPU = "nvidia.com/gpu"
+
+GPU_TYPES = {
+    "NVIDIA-A100-SXM4-80GB": "nvidia.com/a100",
+    "NVIDIA-A40": "nvidia.com/a40",
+    "NVIDIA-RTX-A6000": "nvidia.com/rtxa6000",
+    "Quadro-RTX-8000": "nvidia.com/rtx8000",
+    "NVIDIA-GH200-480GB": "nvidia.com/gh200",
+    "NVIDIA-A100-80GB-PCIe-MIG-1g.10gb": "nvidia.com/mig-small"
+}
+
+
+def GPU_STR(g):
+    return GPU_TYPES.get(g, GPU) if g is not None else GPU
+
 
 class Job:
     def __init__(
-        self,
-        job_name: str,
-        image: str,
-        command: Union[str, List[str]],
-        workingDir: Optional[str] = None,
-        env: Optional[Dict[str, str]] = None,
-        volumes: Optional[Dict[str, str]] = None,
-        ports: Optional[List[int]] = None,
-        gpu_types: Optional[List[str]] = None,
-        region: Optional[str] = None,
-        min_cpu: int = MINCPU,
-        max_cpu: int = MAXCPU,
-        min_ram: int = MINRAM,
-        max_ram: int = MAXRAM,
-        gpu: int = MINGPU,
-        shm: bool = False,
+            self,
+            job_name: str,
+            image: str,
+            command: Union[str, List[str]],
+            workingDir: Optional[str] = None,
+            env: Optional[Dict[str, str]] = None,
+            volumes: Optional[Dict[str, str]] = None,
+            ports: Optional[List[int]] = None,
+            gpu_type: Optional[List[str]] = None,
+            region: Optional[str] = None,
+            hostname: Optional[str] = None,
+            tolerations: Optional[List[str]] = None,
+            min_cpu: int = MINCPU,
+            max_cpu: int = MAXCPU,
+            min_ram: int = MINRAM,
+            max_ram: int = MAXRAM,
+            gpu: int = MINGPU,
+            shm: bool = False,
     ):
         #########
         # Param Check
@@ -59,8 +78,10 @@ class Job:
         assert command is not None and isinstance(command, (str, list)), "Command must be str or list"
         assert workingDir is None or isinstance(workingDir, str), "Working dir must be None or string"
         assert ports is None or isinstance(ports, list), "Ports must be None or list"
-        assert gpu_types is None or isinstance(gpu_types, list), "Gpu Types must be None or list"
+        assert gpu_type is None or isinstance(gpu_type, str), "Gpu Type must be None or str"
+        assert tolerations is None or isinstance(tolerations, list), "Tolerations must be None or list"
         assert region is None or isinstance(region, str), "Region must be None or string"
+        assert hostname is None or isinstance(hostname, str), "Hostname must be None or string"
         assert env is None or isinstance(env, dict), "Env must be dict or None"
         assert volumes is None or isinstance(volumes, dict), "Volumes must be dict or None"
         assert all(isinstance(resource, int) for resource in \
@@ -88,11 +109,11 @@ class Job:
         # Resources
         #########
         self.resources = V1ResourceRequirements(
-            requests={"cpu": min_cpu, "memory": f"{min_ram}Gi", "nvidia.com/gpu": gpu},
+            requests={"cpu": min_cpu, "memory": f"{min_ram}Gi", GPU_STR(gpu_type): gpu},
             limits={
                 "cpu": max(min_cpu, max_cpu),
                 "memory": f"{max(min_ram, max_ram)}Gi",
-                "nvidia.com/gpu": gpu,
+                GPU_STR(gpu_type): gpu,
             },
         )
 
@@ -105,15 +126,15 @@ class Job:
         ####
         # GPU Affinity
         ####
-        if gpu > 0 and gpu_types is not None and len(gpu_types) > 0:
+        if gpu > 0 and gpu_type is not None and gpu_type not in GPU_TYPES:
             LOGGER.debug(
-                f"Found gpu_types and GPU > 0. Setting node affinity: {gpu_types}"
+                f"Found gpu_type and GPU > 0. Setting node affinity: {gpu_type}"
             )
             affinity_terms.append(
                 V1NodeSelectorRequirement(
                     key="nvidia.com/gpu.product",
                     operator="In",
-                    values=gpu_types,
+                    values=gpu_type,
                 )
             )
         ####
@@ -125,6 +146,18 @@ class Job:
                     key="topology.kubernetes.io/region",
                     operator="In",
                     values=[region],
+                )
+            )
+
+        ####
+        # Hostname affinity
+        ####
+        if hostname is not None:
+            affinity_terms.append(
+                V1NodeSelectorRequirement(
+                    key="kubernetes.io/hostname",
+                    operator="In",
+                    values=[hostname],
                 )
             )
 
@@ -195,6 +228,16 @@ class Job:
                 V1EnvVar(name=name, value=str(value)) for name, value in env.items()
             ]
 
+        ######
+        # Tolerations
+        #####
+        self.tolerations = None
+        if tolerations is not None:
+            self.tolerations = [
+                V1Toleration(key=tol, operator="Exists", effect="NoSchedule")
+                for tol in tolerations
+            ]
+
     def create_job_object(self):
         # create container object
         container = V1Container(
@@ -217,6 +260,7 @@ class Job:
                 containers=[container],
                 volumes=self.volumes,
                 affinity=self.affinity,
+                tolerations=self.tolerations
             ),
         )
         # Create the specification of deployment
