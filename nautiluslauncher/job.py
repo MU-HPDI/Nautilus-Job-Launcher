@@ -62,6 +62,7 @@ class Job:
             region: Optional[str] = None,
             hostname: Optional[str] = None,
             tolerations: Optional[List[str]] = None,
+            min_gpu_memory: Optional[int] = 0,
             min_cpu: int = MINCPU,
             max_cpu: int = MAXCPU,
             min_ram: int = MINRAM,
@@ -85,8 +86,9 @@ class Job:
         assert env is None or isinstance(env, dict), "Env must be dict or None"
         assert volumes is None or isinstance(volumes, dict), "Volumes must be dict or None"
         assert all(isinstance(resource, int) for resource in \
-                   [min_cpu, max_cpu, min_ram, max_ram, gpu]), "All resources must be int"
+                   [min_cpu, max_cpu, min_ram, max_ram, gpu, min_gpu_memory]), "All resources must be int"
         assert isinstance(shm, bool), "Shm must be boolean"
+        assert not (min_gpu_memory > 0 and gpu_type is not None), "Cannot specify both GPU type and min GPU memory"
         # fmt: on
 
         #########
@@ -126,17 +128,29 @@ class Job:
         ####
         # GPU Affinity
         ####
-        if gpu > 0 and gpu_type is not None and gpu_type not in GPU_TYPES:
-            LOGGER.debug(
-                f"Found gpu_type and GPU > 0. Setting node affinity: {gpu_type}"
-            )
-            affinity_terms.append(
-                V1NodeSelectorRequirement(
-                    key="nvidia.com/gpu.product",
-                    operator="In",
-                    values=gpu_type,
+        if gpu > 0:
+            if gpu_type is not None and gpu_type not in GPU_TYPES:
+                LOGGER.debug(
+                    f"Found gpu_type and GPU > 0. Setting node affinity: {gpu_type}"
                 )
-            )
+                affinity_terms.append(
+                    V1NodeSelectorRequirement(
+                        key="nvidia.com/gpu.product",
+                        operator="In",
+                        values=[gpu_type],
+                    )
+                )
+            elif min_gpu_memory > 0:
+                LOGGER.debug(
+                    f"Found min_gpu_memory and GPU > 0. Setting node affinity: {min_gpu_memory}"
+                )
+                affinity_terms.append(
+                    V1NodeSelectorRequirement(
+                        key="nvidia.com/gpu.memory",
+                        operator="Gt",
+                        values=[f"{min_gpu_memory}Gi"],
+                    )
+                )
         ####
         # Region Affinity
         ####
